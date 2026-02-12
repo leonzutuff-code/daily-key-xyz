@@ -2,9 +2,10 @@ name: Daily Numeric Key Update
 
 on:
   schedule:
-    - cron: '5 0 * * *'     # täglich 00:05 UTC
+    - cron: '5 0 * * *'
   workflow_dispatch:
 
+# 🔒 Verhindert parallele Läufe
 concurrency:
   group: daily-numeric-key
   cancel-in-progress: false
@@ -19,7 +20,7 @@ jobs:
       - name: Repository auschecken
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0     # 🔴 wichtig für pull --rebase
+          fetch-depth: 0   # 🔴 WICHTIG für pull --rebase
 
       - name: Python einrichten
         uses: actions/setup-python@v5
@@ -41,19 +42,21 @@ jobs:
           print("Neuer Key:", new_key)
           EOF
 
-      - name: Änderung committen und pushen
+      - name: Änderung committen und pushen (FEHLER BEHOBEN)
         run: |
           git config --global user.name "GitHub Action Bot"
           git config --global user.email "action@github.com"
 
           git add key.txt
 
+          # ⛔ Kein Commit, wenn nichts geändert
           if git diff --staged --quiet; then
-            echo "Key unverändert – kein Commit nötig"
+            echo "Key unverändert – nichts zu committen"
             exit 0
           fi
 
           git commit -m "Daily numeric key update $(date +'%Y-%m-%d')"
 
+          # ✅ DAS BEHEBT DEN FEHLER
           git pull origin main --rebase
           git push origin main
