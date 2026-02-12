@@ -1,0 +1,48 @@
+name: Daily Numeric Key Update
+
+on:
+  schedule:
+    - cron: '5 0 * * *'           # jeden Tag 00:05 UTC ≈ 01:05 MEZ
+  workflow_dispatch:              # zum manuellen Testen
+
+jobs:
+  generate-key:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Neuen reinen Zahlen-Key generieren
+        run: |
+          python - << 'EOF'
+          import random
+          
+          length = 24
+          chars = '0123456789'                  # nur Ziffern 0-9
+          new_key = ''.join(random.choice(chars) for _ in range(length))
+          
+          with open('key.txt', 'w', encoding='utf-8') as f:
+              f.write(new_key + '\n')
+          
+          print("Neuer Key generiert:", new_key)
+          EOF
+
+      - name: Änderung committen und pushen
+        run: |
+          git config --global user.name  "GitHub Action Bot"
+          git config --global user.email "action@github.com"
+          
+          git add key.txt
+          
+          git diff --staged --quiet && echo "Key unverändert – nichts zu tun" && exit 0
+          
+          git commit -m "Daily numeric key update $(date +'%Y-%m-%d')"
+          git push
